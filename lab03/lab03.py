@@ -17,7 +17,14 @@ def mysort(lst: List[T], compare: Callable[[T, T], int]) -> List[T]:
     right element, 1 if the left is larger than the right, and 0 if the two
     elements are equal.
     """
-    pass
+    for i in range(1, len(lst)):
+        for j in range(i, 0, -1):
+            if compare(lst[j-1], lst[j]) >= 0:
+                lst[j-1], lst[j] = lst[j], lst[j-1]
+            else:
+                break
+    
+    return lst
 
 def mybinsearch(lst: List[T], elem: S, compare: Callable[[T, S], int]) -> int:
     """
@@ -27,7 +34,25 @@ def mybinsearch(lst: List[T], elem: S, compare: Callable[[T, S], int]) -> int:
     position of the first (leftmost) match for elem in lst. If elem does not
     exist in lst, then return -1.
     """
-    pass
+    def binsearch(lst, elem, l, h):
+        mid = ((h - l) // 2) + l
+        if compare(lst[mid], elem) == 0:
+            return mid
+        if (h - l) <= 0:
+            return -1
+        newlow = mid + 1 if compare(lst[mid], elem) < 0 else l
+        newhigh = mid - 1 if compare(lst[mid], elem) > 0 else h
+        return binsearch(lst, elem, newlow, newhigh)
+    
+    pos = binsearch(lst, elem, 0, len(lst)-1)
+    for i in range(1, pos):
+        if compare(lst[pos - i], elem) == 0:
+            pos -= i
+        else:
+            break
+
+    return pos
+
 
 class Student():
     """Custom class to test generic sorting and searching."""
@@ -106,13 +131,18 @@ def test1_5():
 # EXERCISE 2
 #################################################################################
 class PrefixSearcher():
-
+    k_substrings = []
     def __init__(self, document, k):
         """
         Initializes a prefix searcher using a document and a maximum
         search string length k.
         """
-        pass
+        self.k_substrings.clear()
+        for i in range(len(document)):
+            if (len(document)-i) < 2:
+                self.k_substrings.append(document[i:])
+            else:
+                 self.k_substrings.append(document[i:i+k])
 
     def search(self, q):
         """
@@ -121,7 +151,15 @@ class PrefixSearcher():
         length up to n). If q is longer than n, then raise an
         Exception.
         """
-        pass
+        if len(q) > len(self.k_substrings):
+            raise Exception('Search string is longer than the document')
+        strcmp = lambda x,y:  0 if x[0:len(y)] == y else (-1 if x[0:len(y)] < y else 1)
+        sorted_substrings = mysort(self.k_substrings, strcmp)
+        if mybinsearch(sorted_substrings, q, strcmp) != -1:
+            return True
+        else:
+            return False
+        
 
 # 30 Points
 def test2():
@@ -158,25 +196,52 @@ def test2_2():
 # EXERCISE 3
 #################################################################################
 class SuffixArray():
-
+    suffix_array = []
+    document = []
+    def compare(self, i, j):
+        if self.document[i:i+len(j)] < j:
+            return -1
+        if self.document[i:i+len(j)] > j:
+            return 1
+        else:
+            return 0
     def __init__(self, document: str):
         """
         Creates a suffix array for document (a string).
         """
-        pass
-
+        def compare(i, j):
+            if document[i:] < document[j:]:
+                return -1
+            if document[i:] > document[j:]:
+                return 1
+            else:
+                return 0
+        self.document = document
+        self.suffix_array = [s for s in range(0, len(document))]
+        self.suffix_array = mysort(self.suffix_array, compare)
 
     def positions(self, searchstr: str):
         """
         Returns all the positions of searchstr in the documented indexed by the suffix array.
         """
-        pass
+        pos = []
+        pos.append(mybinsearch(self.suffix_array, searchstr, self.compare))
+        for i in range(1, len(self.suffix_array) - pos[0]):
+            if self.compare(self.suffix_array[pos[0] + i], searchstr) == 0:
+                pos.append(pos[0]+i)
+            else:
+                break
+        
+        return [pos[0]]
 
     def contains(self, searchstr: str):
         """
         Returns true of searchstr is coontained in document.
         """
-        pass
+        if mybinsearch(self.suffix_array, searchstr, self.compare) != -1:
+            return True
+        else:
+            return False
 
 # 40 Points
 def test3():
