@@ -51,6 +51,23 @@ def check_delimiters(expr):
     delim_closers = '})]>'
 
     ### BEGIN SOLUTION
+    s_open = Stack()
+    s_close = Stack()
+    for c in expr:
+        for i in range(4):
+            if c == delim_openers[i]:
+                s_open.push(c)
+                s_close.push(delim_closers[i])
+            elif c == delim_closers[i]:
+                if c == s_close.peek():
+                    try:
+                        s_open.pop()
+                        s_close.pop()
+                    except:
+                        return False
+                else:
+                    return False
+    return s_open.empty()
     ### END SOLUTION
 
 ################################################################################
@@ -120,7 +137,36 @@ def infix_to_postfix(expr):
     ops = Stack()
     postfix = []
     toks = expr.split()
+    is_empty = ops.empty()
     ### BEGIN SOLUTION
+    for t in toks:
+        if t == '*' or t == '/' or t == '-' or t == '+':
+            if is_empty:
+                ops.push(t)
+                is_empty = False
+            elif prec[t] < prec[ops.peek()]:
+                postfix.append(ops.pop())
+                ops.push(t)
+            elif prec[t] > prec[ops.peek()]:
+                ops.push(t)
+            else:
+                postfix.append(ops.pop())
+                ops.push(t)
+        elif t == '(' or t == ')':
+            if t == '(':
+                ops.push(t)
+                is_empty = True
+            elif t == ')':
+                while ops.peek() != '(':
+                    postfix.append(ops.pop())
+                ops.pop()
+                is_empty = False
+            if ops.peek() == '(':
+                is_empty = True
+        else:
+            postfix.append(t)
+    for o in ops:
+        postfix.append(ops.pop())
     ### END SOLUTION
     return ' '.join(postfix)
 
@@ -166,19 +212,55 @@ class Queue:
 
     def enqueue(self, val):
         ### BEGIN SOLUTION
+        if self.head == -1:
+            if self.tail >= len(self.data)-1:
+                raise RuntimeError
+        temp = self.tail
+        self.tail = (self.tail + 1) % len(self.data)
+        if self.tail == self.head:
+            self.tail = temp
+            raise RuntimeError
+        self.data[self.tail] = val
         ### END SOLUTION
 
     def dequeue(self):
         ### BEGIN SOLUTION
+        if self.empty():
+            raise RuntimeError
+        if self.head == -1:
+            self.head = 0
+        deq = self.data[self.head]
+        self.data[self.head] = None
+        self.head = (self.head + 1) % len(self.data)
+        if self.head == (self.tail + 1) % len(self.data):
+            if None in self.data:
+               self.head = self.tail = -1
+        return deq
         ### END SOLUTION
 
     def resize(self, newsize):
         assert(len(self.data) < newsize)
         ### BEGIN SOLUTION
+        newarr = [None] * newsize
+        origin_len = len(self.data)
+        if self.tail >= self.head:
+            for i in range(self.tail+1-self.head):
+                newarr[i] = self.data[self.head+i]
+        elif self.tail < self.head:
+            for i in range(len(self.data)-self.head+self.tail+1):
+                idx = (self.head + i) % len(self.data)
+                newarr[i] = self.data[idx]
+        self.data = newarr
+        self.head = 0
+        self.tail = origin_len - 1
         ### END SOLUTION
 
     def empty(self):
         ### BEGIN SOLUTION
+        if self.head == self.tail == -1:
+            return True
+        else:
+            return False
         ### END SOLUTION
 
     def __bool__(self):
@@ -194,6 +276,13 @@ class Queue:
 
     def __iter__(self):
         ### BEGIN SOLUTION
+        if self.tail >= self.head:
+            for i in range(self.head, self.tail+1):
+                yield self.data[i]
+        elif self.tail < self.head:
+            for i in range(len(self.data)-self.head+self.tail+1):
+                idx = (self.head + i) % len(self.data)
+                yield self.data[idx]
         ### END SOLUTION
 
 ################################################################################
@@ -247,6 +336,7 @@ def test_queue_implementation_2():
 	    tc.assertEqual(x, y)
 
 	tc.assertEqual(q.dequeue(), 5)
+    
 	for i in range(9):
 	    tc.assertEqual(q.dequeue(), i)
 
