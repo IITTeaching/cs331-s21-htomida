@@ -53,6 +53,17 @@ class HBStree:
         KeyError, if key does not exist.
         """
         # BEGIN SOLUTION
+        cur_root = self.get_current_root()
+        def find(t, x):
+            if not t:
+                raise KeyError
+            if t.val == x:
+                return x
+            if t.val > x:
+                return find(t.left, x)
+            if t.val < x:
+                return find(t.right, x)
+        return find(cur_root, key)
         # END SOLUTION
 
     def __contains__(self, el):
@@ -60,6 +71,17 @@ class HBStree:
         Return True if el exists in the current version of the tree.
         """
         # BEGIN SOLUTION
+        cur_root = self.get_current_root()
+        def find(t, x):
+            if not t:
+                return False
+            if t.val == x:
+                return True
+            if t.val > x:
+                return find(t.left, x)
+            if t.val < x:
+                return find(t.right, x)
+        return find(cur_root, el)
         # END SOLUTION
 
     def insert(self,key):
@@ -69,11 +91,54 @@ class HBStree:
         from creating a new version.
         """
         # BEGIN SOLUTION
+        if key in self:
+            return
+        else:
+            def rec_add(r,val):
+                if(not r):
+                    return HBStree.INode(val, None, None)
+                if(r.val > val):
+                    return HBStree.INode(r.val, rec_add(r.left,val), r.right)
+                elif(r.val < val):
+                    return HBStree.INode(r.val, r.left, rec_add(r.right,val))
+
+            if self.root_versions[-1]:
+                self.root_versions.append(rec_add(self.root_versions[-1], key))
+            else:
+                self.root_versions.append(HBStree.INode(key, None, None))
         # END SOLUTION
+
+    def tmax(self, r):
+        if not r.right:
+            return r.val
+        return self.tmax(r.right)
 
     def delete(self,key):
         """Delete key from the tree, creating a new version of the tree. If key does not exist in the current version of the tree, then do nothing and refrain from creating a new version."""
         # BEGIN SOLUTION
+        if not(key in self):
+            return
+        def rec_del(parent,isleft,t,key):
+            if t.val > key:
+                return HBStree.INode(t.val, rec_del(t, True, t.left, key), t.right)
+            elif t.val < key:
+                return HBStree.INode(t.val, t.left, rec_del(t, False, t.right, key))
+            else:
+                if t.left and t.right:
+                    replaceval = self.tmax(t.left)
+                    return HBStree.INode(replaceval, rec_del(t, True, t.left, replaceval), t.right)
+                elif t.left:
+                    return HBStree.INode(t.left.val, t.left.left, t.left.right)
+                elif t.right:
+                    return HBStree.INode(t.right.val, t.right.left, t.right.right)
+                else:
+                    if parent:
+                        if isleft:
+                            return None
+                        else:
+                            return None
+
+        self.root_versions.append(rec_del(None,None,self.root_versions[-1],key))
         # END SOLUTION
 
     @staticmethod
@@ -145,6 +210,13 @@ class HBStree:
         if timetravel < 0 or timetravel >= len(self.root_versions):
             raise IndexError(f"valid versions for time travel are 0 to {len(self.root_versions) -1}, but was {timetravel}")
         # BEGIN SOLUTION
+        def rec_iter(r):
+            if r:
+                yield from rec_iter(r.left)
+                yield r.val
+                yield from rec_iter(r.right)
+
+        yield from rec_iter(self.root_versions[-(timetravel+1)])
         # END SOLUTION
 
     @staticmethod
@@ -210,7 +282,6 @@ def check_inserted(vals):
 
     for v in vals:
         t.insert(v)
-
     for i in range(0,len(vals) + 1):
         sortel = [ v for v in t.version_iter(len(vals) - i) ]
         sortval = sorted(vals[0:i])
@@ -254,7 +325,6 @@ def insert_check_delete(vals):
 
     for v in vals:
         t.insert(v)
-
     todo = sorted(vals)
     for i in range(0,len(vals)):
         t.delete(todo[0])
