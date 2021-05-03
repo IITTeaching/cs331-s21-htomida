@@ -15,6 +15,9 @@ class AVLTree:
 
         def rotate_left(self):
             ### BEGIN SOLUTION
+            n = self.right
+            self.val, n.val = n.val, self.val
+            self.right, n.right, self.left, n.left = n.right, n.left, n, self.left
             ### END SOLUTION
 
         @staticmethod
@@ -31,16 +34,96 @@ class AVLTree:
     @staticmethod
     def rebalance(t):
         ### BEGIN SOLUTION
+        def bf(n):
+           return AVLTree.Node.height(n.right) - AVLTree.Node.height(n.left)
+        if t.left and t.right:
+            bf_root = bf(t)
+        elif t.left:
+            bf_root = 0 - AVLTree.Node.height(t.left)
+        elif t.right:
+            bf_root = AVLTree.Node.height(t.right) - 0
+        else:
+            bf_root = 0
+        if bf_root == -2:
+            if bf(t.left) <= 0:
+                t.rotate_right()
+            elif bf(t.left) > 0:
+                t.left.rotate_left()
+                t.rotate_right()
+        elif bf_root == 2:
+            if bf(t.right) >= 0:
+                t.rotate_left()
+            elif bf(t.right) < 0:
+                t.right.rotate_right()
+                t.rotate_left()
         ### END SOLUTION
 
     def add(self, val):
         assert(val not in self)
         ### BEGIN SOLUTION
+        def rec_add(r, val):
+            if(r.val > val):
+                if(r.left):
+                    rec_add(r.left,val)
+                    AVLTree.rebalance(r)
+                else:
+                    r.left = AVLTree.Node(val)
+            elif(r.val < val):
+                if(r.right):
+                    rec_add(r.right,val)
+                    AVLTree.rebalance(r)
+                else:
+                    r.right = AVLTree.Node(val)
+
+        if self.root:
+            rec_add(self.root, val)
+        else:
+            self.root = AVLTree.Node(val)
+        self.size += 1
         ### END SOLUTION
+
+    def tmax(self, n):
+        if not n.right:
+            return n.val
+        return self.tmax(n.right)
 
     def __delitem__(self, val):
         assert(val in self)
         ### BEGIN SOLUTION
+        def rec_del(parent,isleft,t,val):
+            if t.val > val:
+                rec_del(t, True, t.left, val)
+                AVLTree.rebalance(t)
+            elif t.val < val:
+                rec_del(t, False, t.right,val)
+                AVLTree.rebalance(t)
+            else:
+                if t.left and t.right: # node has two children, replace with largest value in the left subtree and then delete that one
+                    replaceval = self.tmax(t.left)
+                    t.val = replaceval
+                    rec_del(t, True, t.left, replaceval)
+                    AVLTree.rebalance(t)
+                elif t.left: # replace node with its only child (the left one)
+                    t.val = t.left.val
+                    t.right = t.left.right
+                    t.left = t.left.left
+                    AVLTree.rebalance(t)
+                elif t.right: # replace node with its only child (the right one)
+                    t.val = t.right.val
+                    t.left = t.right.left
+                    t.right = t.right.right
+                    AVLTree.rebalance(t)
+                else:
+                    if parent:
+                        if isleft:
+                            parent.left = None
+                        else:
+                            parent.right = None
+                    else:
+                        self.root = None
+
+        rec_del(None,None,self.root,val)
+        self.size += -1
         ### END SOLUTION
 
     def __contains__(self, val):
