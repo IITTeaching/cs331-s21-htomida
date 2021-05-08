@@ -6,18 +6,43 @@ def quicksort(lst,pivot_fn):
 
 def qsort(lst,low,high,pivot_fn):
     ### BEGIN SOLUTION
+    def partition(lst,low,high):
+        pivot = pivot_fn(lst, low, high)
+        i = low
+        j = high
+    
+        while (True):
+            while not (lst[i] >= pivot):
+                i += 1
+            while not (lst[j] <= pivot):
+                j -= 1
+            if (i >= j):
+                return j
+
+            lst[i], lst[j] = lst[j], lst[i]
+    if low < high:
+        p = partition(lst,low,high)
+        qsort(lst,low,p,pivot_fn)
+        qsort(lst,p+1,high, pivot_fn)
     ### END SOLUTION
 
 def pivot_first(lst,low,high):
     ### BEGIN SOLUTION
+    return lst[low]
     ### END SOLUTION
 
 def pivot_random(lst,low,high):
     ### BEGIN SOLUTION
+    return lst[random.randrange(low, high)]
     ### END SOLUTION
 
 def pivot_median_of_three(lst,low,high):
     ### BEGIN SOLUTION
+    vals = [lst[low], lst[high], lst[(low+high)//2]]
+    sort = sorted(vals)
+    del sort[0]
+    del sort[-1]
+    return sort[0]
     ### END SOLUTION
 
 ################################################################################
